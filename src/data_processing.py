@@ -1,12 +1,19 @@
 import ckanapi
 from ckanapi.errors import NotFound,CKANAPIError, NotAuthorized
 import requests
+from requests_cache  import CachedSession
 import config
+
+session = CachedSession(
+    cache_name = '../cache/shelter_cache',
+    expire_after = 600
+)
 
 def get_Bombshelter_info():
     try:
         ua_portal = ckanapi.RemoteCKAN(config.URL_CARP_GOV_UA)
         metadata = ua_portal.action.package_show(id=config.ID_BOMBSHELTER)
+        
 
         recources_url = None
         for resources in metadata['resources']:
@@ -14,9 +21,10 @@ def get_Bombshelter_info():
                 resources_url = resources['url']
                 break
         if resources_url:
-            response = requests.get(resources_url)
+            response = session.get(resources_url)
             response.raise_for_status()
-
+            source: str = 'CACHE' if getattr(response, 'from_cache', False) else 'API'
+            print(source)
             return  response.json()  
             
 
