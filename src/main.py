@@ -4,7 +4,9 @@ from IPython.display import display
 
 
 raw_dataset = dp.get_Bombshelter_info()
-geo_data= pd.json_normalize(raw_dataset['features'])
-display(geo_data)
+geo_data = dp.get_normalize_data()
+display(raw_dataset)
+print("*normalize data:*")
+display(geo_data.head())
 
  

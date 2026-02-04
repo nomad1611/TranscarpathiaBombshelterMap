@@ -1,11 +1,10 @@
 import ckanapi
 from ckanapi.errors import NotFound,CKANAPIError, NotAuthorized
-import requests
 from requests_cache  import CachedSession
 import config
+import pandas as pd
 
 session = CachedSession(
-    cache_name = '../cache/shelter_cache',
     expire_after = 600
 )
 
@@ -38,3 +37,15 @@ def get_Bombshelter_info():
         print(f"An unexpected error ocurred: {e};")
     
     return None
+
+
+def get_normalize_data():
+    row_data = get_Bombshelter_info()
+    df_bombshelter = pd.json_normalize(row_data, record_path=['features'])
+    
+    return df_bombshelter
+
+
+
+
+    
