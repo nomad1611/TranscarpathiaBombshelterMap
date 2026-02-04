@@ -185,3 +185,7 @@ poetry.toml
 pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/jupyternotebooks,python
+http_cache.sqlite
+src/__pycache__/data_processing.cpython-314.pyc
+src/__pycache__/data_processing.cpython-314.pyc
+src/__pycache__/data_processing.cpython-314.pyc
