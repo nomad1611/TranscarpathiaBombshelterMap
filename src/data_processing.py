@@ -43,9 +43,11 @@ def get_normalize_data():
     row_data = get_Bombshelter_info()
     df_bombshelter = pd.json_normalize(row_data, record_path=['features'])
     
+    coords_df = pd.DataFrame(df_bombshelter['geometry.coordinates'].to_list(), index = df_bombshelter.index)
+    
+    df_bombshelter['longitude'] = coords_df[0]
+    df_bombshelter['latitude'] = coords_df[1]
     return df_bombshelter
-
-
 
 
     
