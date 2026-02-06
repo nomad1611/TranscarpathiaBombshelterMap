@@ -49,5 +49,14 @@ def get_normalize_data():
     df_bombshelter['latitude'] = coords_df[1]
     return df_bombshelter
 
+def get_city_info(cityName:str, df:pd.DataFrame)-> pd.DataFrame:
+        df_categorized = df[(df["properties.City"] == cityName)]
+        return df_categorized 
+
+def get_cityName(df:pd.DataFrame) -> pd.Series:
+    df_cityName = df["properties.City"].drop_duplicates().squeeze().sort_values()
+    df
+    return df_cityName
+
 
     
