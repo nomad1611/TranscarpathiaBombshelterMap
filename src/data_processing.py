@@ -93,6 +93,19 @@ def clean_str_strict(s:pd.Series) -> pd.Series:
     
     return s_str.str.strip()
 
+def clean_num(s:pd.Series) -> pd.Series:
+    s_Num = s.astype(dtype=str)
+    s_Num = s_Num.str.replace(r'\s+', '', regex=True)
+    s_Num = s_Num.str.replace(r'[А-Яа-яA-za-z]', '', regex=True) 
+    
+    regexQuotes = r'[“”„\?»«]'
+    s_Num = s_Num.str.replace(regexQuotes, '', regex=True)
+
+    s_Num = s_Num.str.replace(',' , '.') 
+    
+    s_Num = s_Num.str.strip()
+
+    return pd.to_numeric(s_Num)
 
 
 def clean_properties_OTG(s: pd.Series) -> pd.Series:
