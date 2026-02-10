@@ -64,9 +64,10 @@ def clean_data_info(df:pd.DataFrame) -> pd.DataFrame :
     
     return df
 
-def clean_str(s:pd.Series) -> pd.Series:
-    s_str = s.copy().astype(dtype=str)
 
+
+def clean_str_base(s:pd.Series) -> pd.Series:
+    s_str = s.astype(dtype=str)
     homoglyphs = {
     'A': 'А', 'B': 'В', 'C': 'С', 'E': 'Е', 'H': 'Н', 'I': 'І', 'K': 'К', 
     'M': 'М', 'O': 'О', 'P': 'Р', 'T': 'Т', 'X': 'Х', 'i': 'і', 'y': 'у',
@@ -75,20 +76,28 @@ def clean_str(s:pd.Series) -> pd.Series:
     trans_table = str.maketrans(homoglyphs)
     s_str = s_str.apply(lambda x: x.translate(trans_table))
     
-    s_str = s_str.str.replace(r'[\n\t]', '', regex=True)
     s_str = s_str.str.replace('`',"'").str.replace("’", "'")
     s_str = s_str.str.replace(r'\s*-\s*', '-', regex=True) 
+    
+    return s_str.str.strip()
+
+
+
+def clean_str_strict(s:pd.Series) -> pd.Series:
+    s_str = clean_str_base(s.astype(dtype=str))
+
+    s_str = s_str.str.replace(r'[\n\t]', '', regex=True)
     s_str = s_str.str.replace(r'\s+[А-Яа-яA-za-z]\b$', '', regex=True) 
     s_str = s_str.str.replace(r'[\d\",]', '', regex=True) 
     s_str = s_str.str.replace(r'\.$|^\.', '', regex=True)
-    s_str = s_str.str.strip()
     
-    return s_str
+    return s_str.str.strip()
+
 
 
 def clean_properties_OTG(s: pd.Series) -> pd.Series:
     
-    s_otg = clean_str(s)
+    s_otg = clean_str_strict(s)
 
     combined_regex = r'(?:\s+(?:ТГ|ОТГ|тг|отг|СТГ|стг).*$)' 
     s_otg = s_otg.str.replace(combined_regex, '', regex=True, flags=re.IGNORECASE)
@@ -98,14 +107,14 @@ def clean_properties_OTG(s: pd.Series) -> pd.Series:
     'Косонська' : 'Косоньська',
     }
     s_otg = s_otg.replace(fixed_dctionary)
-    s_otg = s_otg.str.strip()
 
-    return s_otg
+    return s_otg.str.strip()
+
 
 
 def clean_properties_City(s : pd.Series) -> pd.Series:
     
-    s_city = clean_str(s)
+    s_city = clean_str_strict(s)
 
     combined_regex = r'(?:\s+(?:вул\.|ул\.|пл\.|кв\.).*|вул)\s*$'
     s_city = s_city.str.replace(combined_regex, '', regex=True, flags=re.IGNORECASE)
@@ -152,6 +161,7 @@ def clean_properties_City(s : pd.Series) -> pd.Series:
         'Неветленфолувул' : 'Неветленфолу'
         }
     s_city = s_city.replace(typo_correct, regex=True)
+
     return s_city.str.strip()
 
 
