@@ -3,6 +3,7 @@ from ckanapi.errors import NotFound,CKANAPIError, NotAuthorized
 from requests_cache  import CachedSession
 import config
 import pandas as pd
+import re
 
 session = CachedSession(
     expire_after = 600
@@ -64,7 +65,6 @@ def clean_data_info(df:pd.DataFrame) -> pd.DataFrame :
     return df
 
 def clean_str(s:pd.Series) -> pd.Series:
-    
     s_str = s.copy().astype(dtype=str)
 
     homoglyphs = {
@@ -73,7 +73,7 @@ def clean_str(s:pd.Series) -> pd.Series:
     'a': 'а', 'c': 'с', 'e': 'е', 'o': 'о', 'p': 'р', 'x': 'х'
     }
     trans_table = str.maketrans(homoglyphs)
-    s = s.apply(lambda x: x.translate(trans_table))
+    s_str = s_str.apply(lambda x: x.translate(trans_table))
     
     s_str = s_str.str.replace(r'[\n\t]', '', regex=True)
     s_str = s_str.str.replace('`',"'").str.replace("’", "'")
@@ -84,5 +84,22 @@ def clean_str(s:pd.Series) -> pd.Series:
     s_str = s_str.str.strip()
     
     return s_str
+
+
+def clean_properties_OTG(s: pd.Series) -> pd.Series:
+    
+    s_otg = clean_str(s)
+
+    combined_regex = r'(?:\s+(?:ТГ|ОТГ|тг|отг|СТГ|стг).*$)' 
+    s_otg = s_otg.str.replace(combined_regex, '', regex=True, flags=re.IGNORECASE)
+    
+    fixed_dctionary = {
+    'Усть-Чорна':'Усть-Чорнянська',
+    'Косонська' : 'Косоньська',
+    }
+    s_otg = s_otg.replace(fixed_dctionary)
+    s_otg = s_otg.str.strip()
+
+    return s_otg
 
 
