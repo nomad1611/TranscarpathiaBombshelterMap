@@ -108,6 +108,18 @@ def clean_num(s:pd.Series) -> pd.Series:
     return pd.to_numeric(s_Num)
 
 
+def clean_bool(s:pd.Series) -> pd.Series:
+    
+    s_bezbar = clean_str_strict(s)
+
+    s_bezbar = s_bezbar.str.lower()
+
+    bool_map = {'true': True, 'false': False}
+    s_bezbar = s_bezbar.replace(bool_map)
+    s_bezbar.loc[s_bezbar.isna()] = False
+    
+    return s_bezbar.astype(bool)
+
 def clean_properties_OTG(s: pd.Series) -> pd.Series:
     
     s_otg = clean_str_strict(s)
