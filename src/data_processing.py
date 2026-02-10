@@ -8,7 +8,7 @@ session = CachedSession(
     expire_after = 600
 )
 
-def get_Bombshelter_info():
+def get_raw_api_info():
     try:
         ua_portal = ckanapi.RemoteCKAN(config.URL_CARP_GOV_UA)
         metadata = ua_portal.action.package_show(id=config.ID_BOMBSHELTER)
@@ -40,7 +40,7 @@ def get_Bombshelter_info():
 
 
 def get_normalize_data():
-    row_data = get_Bombshelter_info()
+    row_data = get_raw_api_info()
     df_bombshelter = pd.json_normalize(row_data, record_path=['features'])
     
     coords_df = pd.DataFrame(df_bombshelter['geometry.coordinates'].to_list(), index = df_bombshelter.index)
@@ -58,5 +58,20 @@ def get_cityName(df:pd.DataFrame) -> pd.Series:
     df
     return df_cityName
 
-
+def clean_data_info(df:pd.DataFrame) -> pd.DataFrame :
     
+    
+    return df
+
+def clean_str(s:pd.Series) -> pd.Series:
+    s_str = s.copy().astype(dtype=str)
+    s_str = s_str.str.replace(r'[\n\t]', '', regex=True)
+    s_str = s_str.str.replace('`',"'").str.replace("’", "'")
+    s_str = s_str.str.replace(r'\s*-\s*', '-', regex=True) 
+    s_str = s_str.str.replace(r'\s+[А-Яа-яA-za-z]\b$', '', regex=True) 
+    s_str = s_str.str.replace(r'[\d\",]', '', regex=True) 
+    s_str = s_str.str.replace(r'\.$|^\.', '', regex=True)
+    s_str = s_str.str.strip()
+    return s_str
+
+
