@@ -165,3 +165,24 @@ def clean_properties_City(s : pd.Series) -> pd.Series:
     return s_city.str.strip()
 
 
+
+def clean_properties_Name(s: pd.Series) -> pd.Series:
+
+    s_Name = clean_str_base(s)
+
+    s_Name = s_Name.str.replace(r'\s+', ' ', regex=True)
+    s_Name = s_Name.str.replace(r'^[.,\s]+|[.,\s]+$', '', regex=True)
+    
+    regexQuotes = r'[“”„\?»«]'
+    s_Name = s_Name.str.replace(regexQuotes, '"', regex=True)
+
+    
+
+
+    s_Name = s_Name.str.slice(0, 1).str.upper() + s_Name.str.slice(1)
+    
+
+    
+    return s_Name.str.strip()
+
+
