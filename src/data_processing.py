@@ -64,7 +64,17 @@ def clean_data_info(df:pd.DataFrame) -> pd.DataFrame :
     return df
 
 def clean_str(s:pd.Series) -> pd.Series:
+    
     s_str = s.copy().astype(dtype=str)
+
+    homoglyphs = {
+    'A': 'А', 'B': 'В', 'C': 'С', 'E': 'Е', 'H': 'Н', 'I': 'І', 'K': 'К', 
+    'M': 'М', 'O': 'О', 'P': 'Р', 'T': 'Т', 'X': 'Х', 'i': 'і', 'y': 'у',
+    'a': 'а', 'c': 'с', 'e': 'е', 'o': 'о', 'p': 'р', 'x': 'х'
+    }
+    trans_table = str.maketrans(homoglyphs)
+    s = s.apply(lambda x: x.translate(trans_table))
+    
     s_str = s_str.str.replace(r'[\n\t]', '', regex=True)
     s_str = s_str.str.replace('`',"'").str.replace("’", "'")
     s_str = s_str.str.replace(r'\s*-\s*', '-', regex=True) 
@@ -72,6 +82,7 @@ def clean_str(s:pd.Series) -> pd.Series:
     s_str = s_str.str.replace(r'[\d\",]', '', regex=True) 
     s_str = s_str.str.replace(r'\.$|^\.', '', regex=True)
     s_str = s_str.str.strip()
+    
     return s_str
 
 
