@@ -60,9 +60,16 @@ def get_cityName(df:pd.DataFrame) -> pd.Series:
     return df_cityName
 
 def clean_data_info(df:pd.DataFrame) -> pd.DataFrame :
+    df_clean = df.copy()
+    df_clean["properties.OTG"] = clean_properties_OTG(df_clean["properties.OTG"])
+    df_clean["properties.City"] = clean_properties_City(df_clean["properties.City"])
+    df_clean["properties.Name"] = clean_properties_Name(df_clean["properties.Name"])
+    df_clean["properties.Area"] = clean_num(df_clean["properties.Area"])
+    df_clean["properties.People"] = clean_num(df_clean["properties.People"])
+    df_clean['properties.TypeZs'] = clean_str_strict(df_clean['properties.TypeZs'])
     
     
-    return df
+    return df_clean
 
 
 
