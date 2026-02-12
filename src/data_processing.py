@@ -280,4 +280,15 @@ def clean_properties_Adress(s: pd.Series) -> pd.Series:
 
     return s_adress.str.strip()
 
+def normalize_geometry_coordinates(s: pd.Series) -> pd.DataFrame:
+    coords_df = pd.DataFrame(s['geometry.coordinates'].to_list(), index = s.index)
+
+    coords_df[0] = clean_data_info(coords_df[0])
+    coords_df[1] = clean_data_info(coords_df[1])
+    
+    coords_df = coords_df.rename(columns={ 0:'longitude', 1:'latitude'})
+    
+    return coords_df
+
+
 
