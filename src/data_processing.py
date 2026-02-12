@@ -42,7 +42,8 @@ def get_raw_api_info():
 
 def get_normalize_data():
     row_data = get_raw_api_info()
-    df_bombshelter = pd.json_normalize(row_data, record_path=['features'])
+    df_bombshelter = pd.json_normalize(row_data, record_path = ['features'])
+    df_bombshelter = clean_data_info(df=df_bombshelter)
     return df_bombshelter
 
 def get_city_info(cityName:str, df:pd.DataFrame)-> pd.DataFrame:
@@ -55,22 +56,32 @@ def get_cityName(df:pd.DataFrame) -> pd.Series:
     return df_cityName
 
 def clean_data_info(df:pd.DataFrame) -> pd.DataFrame :
-    df_clean = df.copy()
-    df_clean["properties.OTG"] = clean_properties_OTG(df_clean["properties.OTG"])
-    df_clean["properties.City"] = clean_properties_City(df_clean["properties.City"])
-    df_clean["properties.Name"] = clean_properties_Name(df_clean["properties.Name"])
-    df_clean["properties.Area"] = clean_num(df_clean["properties.Area"])
-    df_clean["properties.People"] = clean_num(df_clean["properties.People"])
-    df_clean['properties.TypeZs'] = clean_str_strict(df_clean['properties.TypeZs'])
-    df_clean['properties.Type'] = clean_str_strict(df_clean['properties.Type'])
-    df_clean['properties.Rajon'] = clean_str_strict(df_clean['properties.Rajon'])
-    df_clean['properties.Bezbar'] = clean_bool(df_clean['properties.Bezbar'])
-    df_clean['properties.Adress'] = clean_properties_Adress(df_clean['properties.Adress'])
-    df_coord = normalize_geometry_coordinates(df_clean['geometry.coordinates'])
-    df_clean['longitude'] = df_coord[0]
-    df_clean['latitude'] = df_coord[1]
+    df_clean = (
+        df.copy()
+        .assign(**{
+              "properties.OTG" : lambda x: clean_properties_OTG(x["properties.OTG"]),
+              "properties.City" : lambda x: clean_properties_City(x["properties.City"]),
+               "properties.Name": lambda x: clean_properties_Name(x["properties.Name"]),
+               "properties.Area": lambda x: clean_num(x["properties.Area"]),
+               "properties.People": lambda x: clean_num(x["properties.People"]),
+               'properties.TypeZs': lambda x: clean_str_strict(x['properties.TypeZs']),
+               'properties.Type': lambda x: clean_str_strict(x['properties.Type']),
+               'properties.Rajon': lambda x: clean_str_strict(x['properties.Rajon']),
+               'properties.Bezbar': lambda x: clean_bool(x['properties.Bezbar']),
+               'properties.Adress': lambda x: clean_properties_Adress(x['properties.Adress'])
+               })
+               .pipe(merge_geometry_columns)
+               )
     
     return df_clean
+
+def merge_geometry_columns(df: pd.DataFrame) -> pd.DataFrame:
+    # Calculate coords
+    coords = normalize_geometry_coordinates(df['geometry.coordinates'])
+    # Add them to the dataframe
+    df['longitude'] = coords['longitude']
+    df['latitude'] = coords['latitude']
+    return df
 
 
 
@@ -102,6 +113,11 @@ def clean_str_strict(s:pd.Series) -> pd.Series:
     return s_str.str.strip()
 
 def clean_num(s:pd.Series) -> pd.Series:
+    
+    t = s.dtype
+    if t == int or t == float or t == complex:
+        return s
+
     s_Num = s.astype(dtype=str)
     s_Num = s_Num.str.replace(r'\s+', '', regex=True)
     s_Num = s_Num.str.replace(r'[А-Яа-яA-za-z]', '', regex=True) 
