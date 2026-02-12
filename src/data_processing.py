@@ -220,46 +220,64 @@ def clean_properties_Name(s: pd.Series) -> pd.Series:
     
     return s_Name.str.strip()
 
+
 def clean_properties_Adress(s: pd.Series) -> pd.Series:
+    s_adress = s.astype(str)
     
-    s_adress = clean_str_base(s)
     
-    s_adress = s_adress.str.replace(r'\.$|^\.', '', regex=True)
+    s_adress = s_adress.str.replace(r'[\n\t]', ' ', regex=True)
     s_adress = s_adress.str.replace(r'\s+', ' ', regex=True)
+    s_adress = s_adress.str.replace(r'\.$|^\.', '', regex=True)
+    
     
     regexQuotes = r'[“”„\?»«]'
     s_adress = s_adress.str.replace(regexQuotes, '"', regex=True)
     
-    regexNumber = r'^(?:№\s?)?\d+(?:[./-]?\d+|[\s-]?[а-яА-Яa-zA-Z])?$'
+    
+    regexNumber = r'^(?:№\s?)?\d+(?:[.\-]?\d+|[\s-]?[а-яА-Яa-zA-Z])?$'
     s_adress = s_adress.str.replace(regexNumber, "Відсутня", regex=True)
     
-    regexCity= r'(?i).+?\b(вул(?:иця)?\s*[.,]?\s*.*)$'
-    s_adress = s_adress.str.replace(regexCity, '', regex=True)
     
-    fixed_dict ={'вул.': "вул. ",
-                 'вул,': "вул. ",
-                 'вул, ': "вул. ",
-                 'вул..': "вул.",
-                 "буд" : "буд.",
-                 "буд." : "буд. ",
-                 "ьуд" : "буд.",
-                 '':'',
-                 'ул.':'вул. ',
-                 'ул. ':'вул.',
-                 'пр.':'пр. ',
-                 'площа':'пл.',
-                 'пл.': 'пл. ',
-                 'Миру' : 'вул. Миру',
-                 'Вайди,6':'вул. Вайди, 6',
-                 'Студентська набережна':'наб. Студентська',
-                 'Перемоги,192' : 'вул. Перемоги, 192',
-                 'Довженка 47': 'вул. Довженка, 47',
-                 'Шевченка': 'вул. Шевченка',
-                 'Колюшева,2': 'вул. Колюшева, 2',
-                 'Дружби 206 а' : 'вул. Дружби, 206 а'
-                 }
+    regexCity = r'(?i).+?\b(вул(?:иця)?\s*[.,]?\s*.*)$'
+    s_adress = s_adress.str.replace(regexCity, r'\1', regex=True)
     
-    s_adress = s_adress.replace(fixed_dict)
+    
+    # Розділяємо "ЛітериЦифри" (Виноградна17 -> Виноградна 17)
+    s_adress = s_adress.str.replace(r'([а-яА-Яa-zA-Z])(\d)', r'\1\, \2', regex=True)
+    
+    s_adress = s_adress.str.replace(r'(\d)([а-яА-Яa-zA-Z])', r'\1 \2', regex=True)
+
+    
+    exact_dict = {
+        'Миру': 'вул. Миру',
+        'Шевченка': 'вул. Шевченка',
+        'Студентська набережна': 'наб. Студентська',
+        'без назви': 'вул. Без Назви', 
+        'Без назви': 'вул. Без Назви',
+        'наб. Киівська, 16': 'наб. Київська, 16',
+        'вул.Пушкіна (Й. Волощукв), 2' : 'вул. Пушкіна (Й. Волощука), 2',
+        'с.Руська Мокра, Тячівського району, Миру, 97':'вул. Миру, 97',
+        'вул. Визволення, 21 /2-пов будівля/': 'вул. Визволення, 21',
+        'вул. Європейська, 18 Тячівського району' : 'вул. Європейська, 18'
+    }
+    s_adress = s_adress.replace(exact_dict)
+
+    # Виправляємо "вул."
+    # \b на початку і в кінці гарантує, що це окреме слово
+    s_adress = s_adress.str.replace(r'(?i)\b(вул|ул)\b[.,]?\s*', 'вул. ', regex=True)
+    
+    s_adress = s_adress.str.replace(r'(?i)\b(пл\.|площа)\s*', 'пл. ', regex=True)
+    
+    s_adress = s_adress.str.replace(r'(?i)\b(пр\.|проспект|просп\.)\s*', 'пр. ', regex=True)
+    
+    # (?!\w) означає "наступний символ НЕ буква". 
+    s_adress = s_adress.str.replace(r'(?i)\b(буд|ьуд)\s*\.?\s*(?![а-яА-Яa-zA-ZіїєґІЇЄҐ])', 'буд. ', regex=True)
+    
+
+    s_adress = s_adress.str.replace(r'(?i)\b(будинок|будівля)\b', 'буд.', regex=True)
+
+    s_adress = s_adress.str.replace(r'(вул\.\s*)+', 'вул. ', regex=True)
+
     return s_adress.str.strip()
 
 
