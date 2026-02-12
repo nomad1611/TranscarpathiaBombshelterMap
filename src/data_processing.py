@@ -43,11 +43,6 @@ def get_raw_api_info():
 def get_normalize_data():
     row_data = get_raw_api_info()
     df_bombshelter = pd.json_normalize(row_data, record_path=['features'])
-    
-    coords_df = pd.DataFrame(df_bombshelter['geometry.coordinates'].to_list(), index = df_bombshelter.index)
-    
-    df_bombshelter['longitude'] = coords_df[0]
-    df_bombshelter['latitude'] = coords_df[1]
     return df_bombshelter
 
 def get_city_info(cityName:str, df:pd.DataFrame)-> pd.DataFrame:
@@ -70,7 +65,10 @@ def clean_data_info(df:pd.DataFrame) -> pd.DataFrame :
     df_clean['properties.Type'] = clean_str_strict(df_clean['properties.Type'])
     df_clean['properties.Rajon'] = clean_str_strict(df_clean['properties.Rajon'])
     df_clean['properties.Bezbar'] = clean_bool(df_clean['properties.Bezbar'])
-    
+    df_clean['properties.Adress'] = clean_properties_Adress(df_clean['properties.Adress'])
+    df_coord = normalize_geometry_coordinates(df_clean['geometry.coordinates'])
+    df_clean['longitude'] = df_coord[0]
+    df_clean['latitude'] = df_coord[1]
     
     return df_clean
 
@@ -281,10 +279,10 @@ def clean_properties_Adress(s: pd.Series) -> pd.Series:
     return s_adress.str.strip()
 
 def normalize_geometry_coordinates(s: pd.Series) -> pd.DataFrame:
-    coords_df = pd.DataFrame(s['geometry.coordinates'].to_list(), index = s.index)
+    coords_df = pd.DataFrame(s.to_list(), index = s.index)
 
-    coords_df[0] = clean_data_info(coords_df[0])
-    coords_df[1] = clean_data_info(coords_df[1])
+    coords_df[0] = clean_num(coords_df[0])
+    coords_df[1] = clean_num(coords_df[1])
     
     coords_df = coords_df.rename(columns={ 0:'longitude', 1:'latitude'})
     
