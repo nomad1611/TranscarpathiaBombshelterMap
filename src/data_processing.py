@@ -67,6 +67,9 @@ def clean_data_info(df:pd.DataFrame) -> pd.DataFrame :
     df_clean["properties.Area"] = clean_num(df_clean["properties.Area"])
     df_clean["properties.People"] = clean_num(df_clean["properties.People"])
     df_clean['properties.TypeZs'] = clean_str_strict(df_clean['properties.TypeZs'])
+    df_clean['properties.Type'] = clean_str_strict(df_clean['properties.Type'])
+    df_clean['properties.Rajon'] = clean_str_strict(df_clean['properties.Rajon'])
+    df_clean['properties.Bezbar'] = clean_bool(df_clean['properties.Bezbar'])
     
     
     return df_clean
@@ -216,5 +219,47 @@ def clean_properties_Name(s: pd.Series) -> pd.Series:
 
     
     return s_Name.str.strip()
+
+def clean_properties_Adress(s: pd.Series) -> pd.Series:
+    
+    s_adress = clean_str_base(s)
+    
+    s_adress = s_adress.str.replace(r'\.$|^\.', '', regex=True)
+    s_adress = s_adress.str.replace(r'\s+', ' ', regex=True)
+    
+    regexQuotes = r'[“”„\?»«]'
+    s_adress = s_adress.str.replace(regexQuotes, '"', regex=True)
+    
+    regexNumber = r'^(?:№\s?)?\d+(?:[./-]?\d+|[\s-]?[а-яА-Яa-zA-Z])?$'
+    s_adress = s_adress.str.replace(regexNumber, "Відсутня", regex=True)
+    
+    regexCity= r'(?i).+?\b(вул(?:иця)?\s*[.,]?\s*.*)$'
+    s_adress = s_adress.str.replace(regexCity, '', regex=True)
+    
+    fixed_dict ={'вул.': "вул. ",
+                 'вул,': "вул. ",
+                 'вул, ': "вул. ",
+                 'вул..': "вул.",
+                 "буд" : "буд.",
+                 "буд." : "буд. ",
+                 "ьуд" : "буд.",
+                 '':'',
+                 'ул.':'вул. ',
+                 'ул. ':'вул.',
+                 'пр.':'пр. ',
+                 'площа':'пл.',
+                 'пл.': 'пл. ',
+                 'Миру' : 'вул. Миру',
+                 'Вайди,6':'вул. Вайди, 6',
+                 'Студентська набережна':'наб. Студентська',
+                 'Перемоги,192' : 'вул. Перемоги, 192',
+                 'Довженка 47': 'вул. Довженка, 47',
+                 'Шевченка': 'вул. Шевченка',
+                 'Колюшева,2': 'вул. Колюшева, 2',
+                 'Дружби 206 а' : 'вул. Дружби, 206 а'
+                 }
+    
+    s_adress = s_adress.replace(fixed_dict)
+    return s_adress.str.strip()
 
 
