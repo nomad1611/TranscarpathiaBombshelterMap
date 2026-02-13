@@ -2,12 +2,38 @@ import pandas as pd
 import data_processing as dp
 from IPython.display import display
 import streamlit as st
+import os
+import leafmap.foliumap as leafmap
 
 geo_data = dp.get_normalize_data()
+st.write(geo_data)
+m = leafmap.Map(center=[48.63176, 24.2], zoom=8)
+
+m.add_basemap('HYBRID')
+m.add_basemap('Stadia.StamenTerrainLines')
+m.add_basemap('Stadia.StamenTerrainLabels')
+m.add_basemap('Stadia.OSMBright',False)
+
+
+
+
+
+
+m.add_points_from_xy(
+   geo_data,
+  x = 'longitude',
+  y='latitude',
+  popup=['properties.Name', 'properties.OTG', 'properties.City', 'properties.Adress','properties.Type','properties.People', 'properties.Bezbar'], 
+  
+    
+  )
+
+m.to_streamlit()
+
 #display(geo_data["properties.Adress"].drop_duplicates())
-s = dp.clean_properties_Adress(geo_data['properties.Adress'])
-s = s.drop_duplicates()
-display(s.sort_values(ascending=True).to_string())
+#s = dp.clean_properties_Adress(geo_data['properties.Adress'])
+#s = s.drop_duplicates()
+#display(s.sort_values(ascending=True).to_string())
 
 #st.sidebar.header("Filter")
 #cityName: str = st.sidebar.selectbox(
