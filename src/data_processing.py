@@ -46,6 +46,21 @@ def get_normalize_data():
     df_bombshelter = clean_data_info(df=df_bombshelter)
     return df_bombshelter
 
+def get_extended_data(df_bombshelter:pd.DataFrame) -> pd.DataFrame:
+    df = df_bombshelter.copy()
+    df = get_googlemaps_links(df)
+    df['properties.Bezbar'] = df['properties.Bezbar'].map({True:'Так', False:'Ні'}).fillna('Невідомо')
+    df = df.rename(columns={
+    'properties.Name': 'Назва',
+    'properties.OTG': 'ОТГ',
+    'properties.City': 'Населений пункт',
+    'properties.Adress': 'Адреса',
+    'properties.Type': 'Тип',
+    'properties.People': 'Місткість',
+    'properties.Bezbar': 'Інклюзивність'
+})
+    return df
+
 def get_city_info(cityName:str, df:pd.DataFrame)-> pd.DataFrame:
         df_categorized = df[(df["properties.City"] == cityName)]
         return df_categorized 
@@ -54,6 +69,14 @@ def get_cityName(df:pd.DataFrame) -> pd.Series:
     df_cityName = df["properties.City"].drop_duplicates().squeeze().sort_values()
     df
     return df_cityName
+
+def get_googlemaps_links(df:pd.DataFrame) -> pd.DataFrame:
+    lat = df['latitude'].astype(str)
+    lng= df['longitude'].astype(str)
+
+    df['link']='https://www.google.com/maps?q='+lat+","+lng
+
+    return df
 
 def clean_data_info(df:pd.DataFrame) -> pd.DataFrame :
     df_clean = (
@@ -134,9 +157,7 @@ def clean_num(s:pd.Series) -> pd.Series:
 
 def clean_bool(s:pd.Series) -> pd.Series:
     
-    s_bezbar = clean_str_strict(s)
-
-    s_bezbar = s_bezbar.str.lower()
+    s_bezbar = s.astype(str).str.lower().str.strip()
 
     bool_map = {'true': True, 'false': False}
     s_bezbar = s_bezbar.replace(bool_map)
