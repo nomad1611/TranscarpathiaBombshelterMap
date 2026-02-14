@@ -1,6 +1,8 @@
 import ckanapi
+import requests
 from ckanapi.errors import NotFound,CKANAPIError, NotAuthorized
 from requests_cache  import CachedSession
+import streamlit as st
 import config
 import pandas as pd
 import re
@@ -8,7 +10,7 @@ import re
 session = CachedSession(
     expire_after = 600
 )
-
+@st.cache_data
 def get_raw_api_info():
     try:
         ua_portal = ckanapi.RemoteCKAN(config.URL_CARP_GOV_UA)
@@ -21,7 +23,7 @@ def get_raw_api_info():
                 resources_url = resources['url']
                 break
         if resources_url:
-            response = session.get(resources_url)
+            response = requests.get(resources_url)
             response.raise_for_status()
             source: str = 'CACHE' if getattr(response, 'from_cache', False) else 'API'
             print(source)
@@ -39,13 +41,15 @@ def get_raw_api_info():
     
     return None
 
-
+@st.cache_data
 def get_normalize_data():
     row_data = get_raw_api_info()
     df_bombshelter = pd.json_normalize(row_data, record_path = ['features'])
     df_bombshelter = clean_data_info(df=df_bombshelter)
     return df_bombshelter
 
+
+@st.cache_data
 def get_extended_data(df_bombshelter:pd.DataFrame) -> pd.DataFrame:
     df = df_bombshelter.copy()
     df = get_googlemaps_links(df)
@@ -57,18 +61,32 @@ def get_extended_data(df_bombshelter:pd.DataFrame) -> pd.DataFrame:
     'properties.Adress': 'Адреса',
     'properties.Type': 'Тип',
     'properties.People': 'Місткість',
-    'properties.Bezbar': 'Інклюзивність'
+    'properties.Bezbar': 'Інклюзивність',
+    'link': "Посилання"
 })
     return df
+
 
 def get_city_info(cityName:str, df:pd.DataFrame)-> pd.DataFrame:
         df_categorized = df[(df["properties.City"] == cityName)]
         return df_categorized 
 
-def get_cityName(df:pd.DataFrame) -> pd.Series:
-    df_cityName = df["properties.City"].drop_duplicates().squeeze().sort_values()
-    df
-    return df_cityName
+@st.cache_data
+def get_sorted_columnData(columnName:str, df:pd.DataFrame) -> pd.Series:
+    
+    if columnName not in df.columns:
+        print(f'Error: can not find column with name {columnName} in dataframe')
+        return None
+    
+    s_sorted = df[columnName].drop_duplicates()
+    s_sorted = s_sorted.sort_values(key=lambda col: col.map(ukr_sort_key))
+
+    return s_sorted
+
+def ukr_sort_key(text):
+    ukr_alphabet = "АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯ"
+    sort_map = {c: i for i, c in enumerate(ukr_alphabet)}
+    return [sort_map.get(c.upper(), 999) for c in text]
 
 def get_googlemaps_links(df:pd.DataFrame) -> pd.DataFrame:
     lat = df['latitude'].astype(str)
@@ -93,8 +111,8 @@ def clean_data_info(df:pd.DataFrame) -> pd.DataFrame :
                'properties.Bezbar': lambda x: clean_bool(x['properties.Bezbar']),
                'properties.Adress': lambda x: clean_properties_Adress(x['properties.Adress'])
                })
-               .pipe(merge_geometry_columns)
-               )
+               .pipe(merge_geometry_columns))
+    df_clean = df_clean.drop(columns=['geometry.coordinates'], errors='ignore')
     
     return df_clean
 
