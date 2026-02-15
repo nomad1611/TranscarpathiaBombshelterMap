@@ -72,4 +72,24 @@ m.add_points_from_xy(
 m.to_streamlit()
 
 
+def display_kpi_metrics(kpis: list[float], kpi_names: list[str]):
+    st.header("Аналітичні дані")
+    for i, (col, (kpi_name, kpi_value)) in enumerate(zip(st.columns(4), zip(kpi_names, kpis))):
+        col.metric(label=kpi_name, value=kpi_value)
+
+SumShelter = len(df_point)
+SumSize = df_point["Місткість"].sum()
+s_bezbar = df_point["Інклюзивність"].value_counts(normalize=True)*100
+bezbar = f"{s_bezbar.loc["Так"]:,.2f}%"
+list_metrics = [SumShelter, SumSize, bezbar]
+list_labels = ["Загальна к-сть бомбосховищ", "Загальна місткість", "Рівень інклюзивності"]
+
+display_kpi_metrics(list_metrics, list_labels)
+#st.metric("Загальна к-сть бомбосховищ", len(df_point))
+#st.metric("Загальна місткість", df_point["Місткість"].sum())
+#s_bezbar = df_point["Інклюзивність"].value_counts(normalize=True)*100
+#bezbar = f"{s_bezbar.loc["Так"]:,.2f}%"
+#st.metric("Рівень інклюзивності", bezbar )
+
+
  
