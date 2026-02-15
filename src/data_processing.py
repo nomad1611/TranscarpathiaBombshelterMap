@@ -11,7 +11,7 @@ session = CachedSession(
     expire_after = 600
 )
 @st.cache_data
-def get_raw_api_info():
+def __get_raw_api_info():
     try:
         ua_portal = ckanapi.RemoteCKAN(config.URL_CARP_GOV_UA)
         metadata = ua_portal.action.package_show(id=config.ID_BOMBSHELTER)
@@ -43,52 +43,96 @@ def get_raw_api_info():
 
 @st.cache_data
 def get_normalize_data():
-    row_data = get_raw_api_info()
+    row_data = __get_raw_api_info()
     df_bombshelter = pd.json_normalize(row_data, record_path = ['features'])
-    df_bombshelter = clean_data_info(df=df_bombshelter)
+    df_bombshelter = __clean_data_info(df=df_bombshelter)
     return df_bombshelter
 
 
 @st.cache_data
 def get_extended_data(df_bombshelter:pd.DataFrame) -> pd.DataFrame:
     df = df_bombshelter.copy()
-    df = get_googlemaps_links(df)
+    df = __get_googlemaps_links(df)
     df['properties.Bezbar'] = df['properties.Bezbar'].map({True:'Так', False:'Ні'}).fillna('Невідомо')
     df = df.rename(columns={
     'properties.Name': 'Назва',
     'properties.OTG': 'ОТГ',
     'properties.City': 'Населений пункт',
+    'properties.Rajon':'Район',
+    'properties.Area' : 'Площа',
+    'properties.Property':'Власність',
     'properties.Adress': 'Адреса',
     'properties.Type': 'Тип',
+    'properties.TypeZs': 'Будова',
     'properties.People': 'Місткість',
     'properties.Bezbar': 'Інклюзивність',
     'link': "Посилання"
 })
+    df = df.drop(columns=['type','geometry.type', 'geometry.coordinates', 'properties.Number'], errors="ignore")
+    
     return df
 
 
-def get_city_info(cityName:str, df:pd.DataFrame)-> pd.DataFrame:
-        df_categorized = df[(df["properties.City"] == cityName)]
-        return df_categorized 
+def get_city_info(OTGName:str, df:pd.DataFrame)-> pd.Series:
+        
+    if OTGName == " ":
+           df_categorized = df["properties.City"]
+    
+    else:
+        df_categorized = df[(df["properties.OTG"] == OTGName)]["properties.City"]
+        
+    sorted_cities = get_sorted_columnData(df_categorized)
+    return [" "] + sorted_cities 
 
 @st.cache_data
-def get_sorted_columnData(columnName:str, df:pd.DataFrame) -> pd.Series:
+def get_sorted_columnData(s:pd.Series) -> pd.Series:
     
-    if columnName not in df.columns:
-        print(f'Error: can not find column with name {columnName} in dataframe')
-        return None
-    
-    s_sorted = df[columnName].drop_duplicates()
-    s_sorted = s_sorted.sort_values(key=lambda col: col.map(ukr_sort_key))
+    s_sorted =s.dropna().unique().tolist()
+    s_sorted = sorted(s_sorted, key=__ukr_sort_key)
 
     return s_sorted
 
-def ukr_sort_key(text):
+
+def search_data(
+    df: pd.DataFrame, 
+    cityName: str | None = None, 
+    OTG: str | None = None, 
+    Type: list[str] | None = None, 
+    Size: int | None = None, 
+    Bezbar: bool | None = None
+) -> pd.DataFrame:
+    
+    mask = pd.Series(True, index=df.index)
+
+    if cityName != " ":
+        mask &= (df['Населений пункт'] == cityName)
+        
+    if OTG != " ":
+        mask &= (df['ОТГ'] == OTG)
+
+    if Type and len(Type) > 0:
+        mask &= (df['Тип'].isin(Type))
+    
+    if Bezbar: 
+        
+        mask &= (df['Інклюзивність'] == 'Так')
+   
+    if Size:
+       
+        mask &= (df['Місткість'] <= Size)
+
+    return df[mask]
+
+
+
+def __ukr_sort_key(text):
     ukr_alphabet = "АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯ"
     sort_map = {c: i for i, c in enumerate(ukr_alphabet)}
     return [sort_map.get(c.upper(), 999) for c in text]
 
-def get_googlemaps_links(df:pd.DataFrame) -> pd.DataFrame:
+
+
+def __get_googlemaps_links(df:pd.DataFrame) -> pd.DataFrame:
     lat = df['latitude'].astype(str)
     lng= df['longitude'].astype(str)
 
@@ -96,29 +140,33 @@ def get_googlemaps_links(df:pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-def clean_data_info(df:pd.DataFrame) -> pd.DataFrame :
+
+
+def __clean_data_info(df:pd.DataFrame) -> pd.DataFrame :
     df_clean = (
         df.copy()
         .assign(**{
-              "properties.OTG" : lambda x: clean_properties_OTG(x["properties.OTG"]),
-              "properties.City" : lambda x: clean_properties_City(x["properties.City"]),
-               "properties.Name": lambda x: clean_properties_Name(x["properties.Name"]),
-               "properties.Area": lambda x: clean_num(x["properties.Area"]),
-               "properties.People": lambda x: clean_num(x["properties.People"]),
-               'properties.TypeZs': lambda x: clean_str_strict(x['properties.TypeZs']),
-               'properties.Type': lambda x: clean_str_strict(x['properties.Type']),
-               'properties.Rajon': lambda x: clean_str_strict(x['properties.Rajon']),
-               'properties.Bezbar': lambda x: clean_bool(x['properties.Bezbar']),
-               'properties.Adress': lambda x: clean_properties_Adress(x['properties.Adress'])
+              "properties.OTG" : lambda x: __clean_properties_OTG(x["properties.OTG"]),
+              "properties.City" : lambda x: __clean_properties_City(x["properties.City"]),
+               "properties.Name": lambda x: __clean_properties_Name(x["properties.Name"]),
+               "properties.Area": lambda x: __clean_num(x["properties.Area"]),
+               "properties.People": lambda x: __clean_num(x["properties.People"]),
+               'properties.TypeZs': lambda x: __clean_str_strict(x['properties.TypeZs']),
+               'properties.Type': lambda x: __clean_str_strict(x['properties.Type']),
+               'properties.Rajon': lambda x: __clean_str_strict(x['properties.Rajon']),
+               'properties.Bezbar': lambda x: __clean_bool(x['properties.Bezbar']),
+               'properties.Adress': lambda x: __clean_properties_Adress(x['properties.Adress'])
                })
-               .pipe(merge_geometry_columns))
+               .pipe(__merge_geometry_columns))
     df_clean = df_clean.drop(columns=['geometry.coordinates'], errors='ignore')
     
     return df_clean
 
-def merge_geometry_columns(df: pd.DataFrame) -> pd.DataFrame:
+
+
+def __merge_geometry_columns(df: pd.DataFrame) -> pd.DataFrame:
     # Calculate coords
-    coords = normalize_geometry_coordinates(df['geometry.coordinates'])
+    coords = __normalize_geometry_coordinates(df['geometry.coordinates'])
     # Add them to the dataframe
     df['longitude'] = coords['longitude']
     df['latitude'] = coords['latitude']
@@ -126,13 +174,13 @@ def merge_geometry_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 
-def clean_str_base(s:pd.Series) -> pd.Series:
+def __clean_str_base(s:pd.Series) -> pd.Series:
     s_str = s.astype(dtype=str)
     homoglyphs = {
     'A': 'А', 'B': 'В', 'C': 'С', 'E': 'Е', 'H': 'Н', 'I': 'І', 'K': 'К', 
     'M': 'М', 'O': 'О', 'P': 'Р', 'T': 'Т', 'X': 'Х', 'i': 'і', 'y': 'у',
-    'a': 'а', 'c': 'с', 'e': 'е', 'o': 'о', 'p': 'р', 'x': 'х'
-    }
+    'a': 'а', 'c': 'с', 'e': 'е', 'o': 'о', 'p': 'р', 'x': 'х'}
+
     trans_table = str.maketrans(homoglyphs)
     s_str = s_str.apply(lambda x: x.translate(trans_table))
     
@@ -143,8 +191,8 @@ def clean_str_base(s:pd.Series) -> pd.Series:
 
 
 
-def clean_str_strict(s:pd.Series) -> pd.Series:
-    s_str = clean_str_base(s.astype(dtype=str))
+def __clean_str_strict(s:pd.Series) -> pd.Series:
+    s_str = __clean_str_base(s.astype(dtype=str))
 
     s_str = s_str.str.replace(r'[\n\t]', '', regex=True)
     s_str = s_str.str.replace(r'\s+[А-Яа-яA-za-z]\b$', '', regex=True) 
@@ -153,7 +201,9 @@ def clean_str_strict(s:pd.Series) -> pd.Series:
     
     return s_str.str.strip()
 
-def clean_num(s:pd.Series) -> pd.Series:
+
+
+def __clean_num(s:pd.Series) -> pd.Series:
     
     t = s.dtype
     if t == int or t == float or t == complex:
@@ -173,7 +223,8 @@ def clean_num(s:pd.Series) -> pd.Series:
     return pd.to_numeric(s_Num)
 
 
-def clean_bool(s:pd.Series) -> pd.Series:
+
+def __clean_bool(s:pd.Series) -> pd.Series:
     
     s_bezbar = s.astype(str).str.lower().str.strip()
 
@@ -183,9 +234,11 @@ def clean_bool(s:pd.Series) -> pd.Series:
     
     return s_bezbar.astype(bool)
 
-def clean_properties_OTG(s: pd.Series) -> pd.Series:
+
+
+def __clean_properties_OTG(s: pd.Series) -> pd.Series:
     
-    s_otg = clean_str_strict(s)
+    s_otg = __clean_str_strict(s)
 
     combined_regex = r'(?:\s+(?:ТГ|ОТГ|тг|отг|СТГ|стг).*$)' 
     s_otg = s_otg.str.replace(combined_regex, '', regex=True, flags=re.IGNORECASE)
@@ -200,9 +253,9 @@ def clean_properties_OTG(s: pd.Series) -> pd.Series:
 
 
 
-def clean_properties_City(s : pd.Series) -> pd.Series:
+def __clean_properties_City(s : pd.Series) -> pd.Series:
     
-    s_city = clean_str_strict(s)
+    s_city = __clean_str_strict(s)
 
     combined_regex = r'(?:\s+(?:вул\.|ул\.|пл\.|кв\.).*|вул)\s*$'
     s_city = s_city.str.replace(combined_regex, '', regex=True, flags=re.IGNORECASE)
@@ -254,9 +307,9 @@ def clean_properties_City(s : pd.Series) -> pd.Series:
 
 
 
-def clean_properties_Name(s: pd.Series) -> pd.Series:
+def __clean_properties_Name(s: pd.Series) -> pd.Series:
 
-    s_Name = clean_str_base(s)
+    s_Name = __clean_str_base(s)
 
     s_Name = s_Name.str.replace(r'\s+', ' ', regex=True)
     s_Name = s_Name.str.replace(r'^[.,\s]+|[.,\s]+$', '', regex=True)
@@ -274,7 +327,8 @@ def clean_properties_Name(s: pd.Series) -> pd.Series:
     return s_Name.str.strip()
 
 
-def clean_properties_Adress(s: pd.Series) -> pd.Series:
+
+def __clean_properties_Adress(s: pd.Series) -> pd.Series:
     s_adress = s.astype(str)
     
     
@@ -333,11 +387,13 @@ def clean_properties_Adress(s: pd.Series) -> pd.Series:
 
     return s_adress.str.strip()
 
-def normalize_geometry_coordinates(s: pd.Series) -> pd.DataFrame:
+
+
+def __normalize_geometry_coordinates(s: pd.Series) -> pd.DataFrame:
     coords_df = pd.DataFrame(s.to_list(), index = s.index)
 
-    coords_df[0] = clean_num(coords_df[0])
-    coords_df[1] = clean_num(coords_df[1])
+    coords_df[0] = __clean_num(coords_df[0])
+    coords_df[1] = __clean_num(coords_df[1])
     
     coords_df = coords_df.rename(columns={ 0:'longitude', 1:'latitude'})
     
