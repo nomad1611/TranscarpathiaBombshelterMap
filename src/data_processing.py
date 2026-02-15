@@ -45,6 +45,7 @@ def __get_raw_api_info():
 def get_normalize_data():
     row_data = __get_raw_api_info()
     df_bombshelter = pd.json_normalize(row_data, record_path = ['features'])
+    df_bombshelter = df_bombshelter.drop(columns=['type','geometry.type', 'properties.Number'], errors="ignore")
     df_bombshelter = __clean_data_info(df=df_bombshelter)
     return df_bombshelter
 
@@ -68,7 +69,7 @@ def get_extended_data(df_bombshelter:pd.DataFrame) -> pd.DataFrame:
     'properties.Bezbar': 'Інклюзивність',
     'link': "Посилання"
 })
-    df = df.drop(columns=['type','geometry.type', 'geometry.coordinates', 'properties.Number'], errors="ignore")
+    
     
     return df
 
