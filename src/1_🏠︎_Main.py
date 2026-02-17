@@ -88,12 +88,33 @@ list_labels = ["Загальна к-сть бомбосховищ", "Загал�
 display_kpi_metrics(list_metrics, list_labels)
 
 type_sum = pd.DataFrame(df_point.groupby("Тип")["Місткість"].sum())
-
+pie_palette =["#255c54","#3d814b","#8f9e21","#ffa600"]
 pie_chart = px.pie(type_sum, names=type_sum.index,
         values = "Місткість",
-         title=" Розподіл місткості бомбосховищ за типом укриття",
-         template="seaborn"
+         title="Розподіл місткості бомбосховищ за типом укриття",
+         color_discrete_sequence=pie_palette,
+         hole=0.4
          )
+pie_chart.update_layout(
+    title=dict(
+        text="Розподіл місткості бомбосховищ за типом укриття",
+        font=dict(size=30)
+    ),
+    
+    # 2. The Legend (Right side items)
+    legend=dict(
+        font=dict(size=25), # <--- THIS is what changes the text size
+        orientation="v",    # "v" for vertical list, "h" for horizontal
+        yanchor="top",      # Anchor to top
+        y=1,                # Position at top
+        xanchor="left",     # Anchor to left
+        x=1.05              # Move slightly to the right of the chart
+    ),
+    
+    # 3. Global font (Backup for other text)
+    font=dict(size=20)
+)
+
 st.plotly_chart(pie_chart, height="stretch")
 
 # 1. Determine the "Target OTG" for the chart context
@@ -112,12 +133,12 @@ elif cityName != " ":
 if target_otg:
     # Filter the FULL dataset to get all cities in this OTG
     df_chart = df_b[df_b['ОТГ'] == target_otg]
-    title = f"Топ-5 населених пунктів за місткістю будівель цивільного захисту: {target_otg} громада"
+    title = f"Топ-5 нас. пунктів за місткістю будівель цивільного захисту: {target_otg} громада"
     top_n = 5
 else:
     # Case C: Nothing selected, show the whole region
     df_chart = df_b
-    title = "Топ-10 населених пунктів Закарпатської області за місткістю будівель цивільного захисту"
+    title = "Топ-10 нас. пунктів Закарпатської обл. за місткістю будівель цивільного захисту"
     top_n = 10
 
 # 3. Group and Sort
@@ -138,10 +159,26 @@ fig = px.bar(
     title=title,
     text_auto=True,
     labels={'x': 'Загальна місткість (осіб)', 'y': 'Населений пункт'},
-    color='Місткість', # 2. Color depends on value (Darker = Bigger)
-    color_continuous_scale='Viridis',
+    color='Місткість',
+    # Use a built-in green scale or make a custom one
+    color_continuous_scale=["#53a664", "#255c54"]
     
 )
+
+
+# Update the global font settings
+fig.update_layout(
+    title_font_size=30,
+    xaxis_title_font_size=25,
+    font=dict(
+         # Optional: Change font family
+        size=25,         # Set base font size (Default is usually 12)
+        #color="black"
+    )
+)
+fig.update_traces(textfont_size=30,      # Size of the numbers on the bars
+    textposition='outside')
+
 
 st.plotly_chart(fig, height="stretch")
 
