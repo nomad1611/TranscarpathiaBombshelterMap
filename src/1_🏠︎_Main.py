@@ -3,8 +3,9 @@ import data_processing as dp
 from IPython.display import display
 import streamlit as st
 import leafmap.foliumap as leafmap
+import plotly.express as px
 
-st.set_page_config(page_title="Головна сторінка", page_icon="🏠")
+st.set_page_config(page_title="Головна сторінка", page_icon="🏠", layout="wide")
 
 st.header("Головна сторінка")
 st.write("Інформаційно-аналітична система контролю та візуалізації будівель цивільного захисту на території Закарпатської області")
@@ -85,11 +86,64 @@ list_metrics = [SumShelter, SumSize, bezbar]
 list_labels = ["Загальна к-сть бомбосховищ", "Загальна місткість", "Рівень інклюзивності"]
 
 display_kpi_metrics(list_metrics, list_labels)
-#st.metric("Загальна к-сть бомбосховищ", len(df_point))
-#st.metric("Загальна місткість", df_point["Місткість"].sum())
-#s_bezbar = df_point["Інклюзивність"].value_counts(normalize=True)*100
-#bezbar = f"{s_bezbar.loc["Так"]:,.2f}%"
-#st.metric("Рівень інклюзивності", bezbar )
+
+type_sum = pd.DataFrame(df_point.groupby("Тип")["Місткість"].sum())
+
+pie_chart = px.pie(type_sum, names=type_sum.index,
+        values = "Місткість",
+         title=" Розподіл місткості бомбосховищ за типом укриття",
+         template="seaborn"
+         )
+st.plotly_chart(pie_chart, height="stretch")
+
+# 1. Determine the "Target OTG" for the chart context
+target_otg = None
+
+if OTGName != " ":
+    # Case A: User explicitly selected an OTG
+    target_otg = OTGName
+elif cityName != " ":
+    # Case B: User skipped OTG but selected a City
+    # We find the OTG that this city belongs to
+    # .values[0] grabs the string value from the series
+    target_otg = df_b[df_b['Населений пункт'] == cityName]['ОТГ'].values[0]
+
+# 2. Prepare Data for the Chart (Separate from the Map data!)
+if target_otg:
+    # Filter the FULL dataset to get all cities in this OTG
+    df_chart = df_b[df_b['ОТГ'] == target_otg]
+    title = f"Топ-5 населених пунктів за місткістю будівель цивільного захисту: {target_otg} громада"
+    top_n = 5
+else:
+    # Case C: Nothing selected, show the whole region
+    df_chart = df_b
+    title = "Топ-10 населених пунктів Закарпатської області за місткістю будівель цивільного захисту"
+    top_n = 10
+
+# 3. Group and Sort
+# We calculate total capacity per city
+df_citySize = (
+    df_chart.groupby("Населений пункт")["Місткість"]
+    .sum()
+    .sort_values(ascending=True) # Sort so largest is at the end (top of horiz chart)
+    .tail(top_n) # Take the top N largest
+)
+
+# 4. Plot
+fig = px.bar(
+    df_citySize, 
+    x=df_citySize.values, 
+    y=df_citySize.index, 
+    orientation="h", 
+    title=title,
+    text_auto=True,
+    labels={'x': 'Загальна місткість (осіб)', 'y': 'Населений пункт'},
+    color='Місткість', # 2. Color depends on value (Darker = Bigger)
+    color_continuous_scale='Viridis',
+    
+)
+
+st.plotly_chart(fig, height="stretch")
 
 
  
