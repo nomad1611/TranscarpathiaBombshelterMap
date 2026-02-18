@@ -46,11 +46,11 @@ def display_pie_chart(df_sum: pd.DataFrame, color_palette:dict|None, value:str =
     
     pie_chart.update_layout(
         title_font_size=24,
-        legend=dict(font=dict(size=14), orientation="h", y=-0.1), # Move legend to bottom to save width
+        legend=dict(font=dict(size=18), orientation="h", y=-0.1), # Move legend to bottom to save width
         margin=dict(l=20, r=20, t=50, b=20)
     )
     
-    st.plotly_chart(pie_chart, use_container_width=True)
+    st.plotly_chart(pie_chart, width="stretch")
 
 def display_bar_chart(s: pd.Series, title: str|None=None, color: str|None = None, color_palette:dict |None = None):
     fig_bar = px.bar(
@@ -70,9 +70,9 @@ def display_bar_chart(s: pd.Series, title: str|None=None, color: str|None = None
         xaxis_title=None, # Hide axis title to save space
         yaxis_title=None,
         showlegend=False,
-        font=dict(size=16),
+        font=dict(size=18),
         margin=dict(l=20, r=20, t=50, b=20)
     )
     fig_bar.update_traces(textfont_size=16, textposition='outside', cliponaxis=False)
 
-    st.plotly_chart(fig_bar, use_container_width=True)
+    st.plotly_chart(fig_bar, width="stretch")
