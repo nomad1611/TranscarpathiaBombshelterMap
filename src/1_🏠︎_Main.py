@@ -73,21 +73,50 @@ m.add_points_from_xy(
 m.to_streamlit()
 
 
-def display_kpi_metrics(kpis: list[float], kpi_names: list[str]):
-    st.header("Аналітичні дані")
-    for i, (col, (kpi_name, kpi_value)) in enumerate(zip(st.columns(4), zip(kpi_names, kpis))):
-        col.metric(label=kpi_name, value=kpi_value)
-
-SumShelter = len(df_point)
+def display_kpi_card(title: str, kpis: list, kpi_names: list[str]):
+    # 1. Generate the inner HTML for metrics
+    metrics_html = ""
+    for label, value in zip(kpi_names, kpis):
+        
+        # Formatting Logic:
+        # If it's a number (int/float), add commas (e.g., 271,538)
+        # If it's a string (like "16.2%"), leave it alone
+        if isinstance(value, (int, float)):
+            formatted_value = f"{value:,}".replace(",", " ") # Use space as thousands separator
+        else:
+            formatted_value = value
+            
+        metrics_html += f"""
+<div style="flex: 1; text-align: center; padding: 10px;">    <div style="font-size: 14px; color: #d1e7dd; margin-bottom: 5px;">{label}</div> <div style="font-size: 28px; font-weight: bold; color: white;">{formatted_value}</div> </div>"""
+        
+    # 2. Render the Main Card Container
+    # FIX: Removed indentation inside the f-string here too
+    st.markdown(f"""
+<div style="background-color: #255c54; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; font-family: sans-serif;">
+<h3 style="color: white; margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.3); font-size: 20px; text-align: left;">        
+{title}</h3>
+<div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
+{metrics_html}
+</div>
+</div>
+""", unsafe_allow_html=True)
+    # Use the new parameter
+SumShelter = df_point["ID"].count()
 SumSize = df_point["Місткість"].sum()
-s_bezbar = df_point["Інклюзивність"].value_counts(normalize=True)*100
-bezbar = f"{s_bezbar.loc["Так"]:,.2f}%"
-list_metrics = [SumShelter, SumSize, bezbar]
-list_labels = ["Загальна к-сть бомбосховищ", "Загальна місткість", "Рівень інклюзивності"]
 
-display_kpi_metrics(list_metrics, list_labels)
+# 2. Safe calculation for Accessibility %
+if len(df_point) > 0:
+    counts = df_point["Інклюзивність"].value_counts(normalize=True) * 100
+    bezbar_val = counts.get("Так", 0) # Get "Так" or return 0
+else:
+    bezbar_val = 0
 
-# Create two columns with equal width
+bezbar_str = f"{bezbar_val:,.1f}%"
+display_kpi_card(
+    "Аналітичні дані", 
+    [SumShelter, SumSize, bezbar_str], 
+    ["Кількість бомбосховищ", "Загальна місткість", "Рівень інклюзивності"]
+)
 col1, col2 = st.columns(2)
 
 # --- LEFT COLUMN: PIE CHART ---
