@@ -1,15 +1,28 @@
-import ckanapi
 import requests
+import ckanapi
 from ckanapi.errors import NotFound,CKANAPIError, NotAuthorized
-from requests_cache  import CachedSession
+
+
 import streamlit as st
-import config
 import pandas as pd
+
+import config_regex as rx
+import config
 import re
 
-session = CachedSession(
-    expire_after = 600
-)
+_HOMOGLYPHS: dict[str, str] = {
+    "A": "А", "B": "В", "C": "С", "E": "Е", "H": "Н", "I": "І",
+    "K": "К", "M": "М", "O": "О", "P": "Р", "T": "Т", "X": "Х",
+    "i": "і", "y": "у", "a": "а", "c": "с", "e": "е",
+    "o": "о", "p": "р", "x": "х",
+}
+_HOMOGLYPH_TABLE = str.maketrans(_HOMOGLYPHS)
+
+# Ukrainian alphabet order for sorting
+_UKR_ALPHABET = "АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯ"
+_UKR_SORT_MAP: dict[str, int] = {c: i for i, c in enumerate(_UKR_ALPHABET)}
+
+
 @st.cache_data
 def __get_raw_api_info():
     try:
