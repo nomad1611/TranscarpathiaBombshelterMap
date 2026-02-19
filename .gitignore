@@ -198,3 +198,4 @@ notebooks/csv_test_data/testCityName.csv
 notebooks/csv_test_data/testCityName2.csv
 notebooks/csv_test_data/OTG_clean.csv
 src/__pycache__/data_processing.cpython-314.pyc
+logs/log.txt

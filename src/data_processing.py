@@ -1,3 +1,6 @@
+import logging
+import os
+
 import requests
 import ckanapi
 from ckanapi.errors import NotFound,CKANAPIError, NotAuthorized
@@ -22,41 +25,93 @@ _HOMOGLYPH_TABLE = str.maketrans(_HOMOGLYPHS)
 _UKR_ALPHABET = "АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯ"
 _UKR_SORT_MAP: dict[str, int] = {c: i for i, c in enumerate(_UKR_ALPHABET)}
 
+@st.cache_resource
+def _setup_logger():
+    """
+    Sets up a logger using st.cache_resource to prevent duplicate 
+    log handlers when Streamlit reruns the script.
+    """
+
+    logger = logging.getLogger("CKAN_App")
+
+    if not logger.handlers:
+        logger.setLevel(logging.INFO)
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+        
+        log_file_path = "./logs/log.txt"
+        os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+        
+        file_handler = logging.FileHandler(log_file_path)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+        
+        
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+
+    return logger
+
+    
+
+
+
+logger= _setup_logger()
 
 @st.cache_data
-def __get_raw_api_info():
+def _get_raw_api_info() -> dict | None:
+    """ Fetch raw GeoJSON data from the carpathia.gov.ua.
+    Returns:
+        Pased GeoJSON dictionary on success or ``None`` if request fails.
+    Raises:
+        DataFetchError: Propagated to the caller after displaying an
+            ``st.error`` notification so the Streamlit UI can react.
+
+    """
+    logger.info(f"Initiating API request to {config.URL_CARP_GOV_UA}")
+    logger.debug(f"Parameters: {config.ID_BOMBSHELTER}")
+        
     try:
+        
         ua_portal = ckanapi.RemoteCKAN(config.URL_CARP_GOV_UA)
         metadata = ua_portal.action.package_show(id=config.ID_BOMBSHELTER)
         
-
-        recources_url = None
-        for resources in metadata['resources']:
-            if resources['format'].lower() == 'geojson':
-                resources_url = resources['url']
+        resources_url: str | None = None
+        for resource in metadata['resources']:
+            if resource['format'].lower() == 'geojson':
+                resources_url = resource['url']
+                logger.info(f"Successfully fetched {resources_url} url from CKAN.")
                 break
-        if resources_url:
-            response = requests.get(resources_url)
-            response.raise_for_status()
-            source: str = 'CACHE' if getattr(response, 'from_cache', False) else 'API'
-            print(source)
-            return  response.json()  
+
+        if resources_url is None:
+            logger.error("GEOJSON resource not found in the dataset metadata.")
+            return None
+        
+        response = requests.get(resources_url)
+        response.raise_for_status()
+        
+        source: str = 'CACHE' if getattr(response, 'from_cache', False) else 'API'
+        logger.info(f"Successfully fetched data records from {source}.")
+        return  response.json()  
             
 
     except NotFound:
-         print("Error: ID of dataset doesn`t exist on this site;")
+         logger.error(f"Dataset ID '{config.ID_BOMBSHELTER}' was not found on the portal.")
     except NotAuthorized:
-        print("Error: This dataset is private or requires API key to access;")
+        logger.error("Access denied: This dataset is private or requires API key to access;")
     except CKANAPIError as e:
-        print(f"Error:A CKAN API error occured: {e}; ")
+        logger.error(f"Error:A CKAN API error occured: {e}; ")
+    except requests.RequestException as exc:
+        logger.error(f"Network error while fetching GeoJSON: {exc}")
     except Exception as e:
-        print(f"An unexpected error ocurred: {e};")
+        logger.error(f"An unexpected error ocurred: {e};")
     
     return None
 
 @st.cache_data
 def get_normalize_data():
-    row_data = __get_raw_api_info()
+    row_data = _get_raw_api_info()
     df_bombshelter = pd.json_normalize(row_data, record_path = ['features'])
     df_bombshelter = df_bombshelter.drop(columns=['type','geometry.type', 'properties.Number'], errors="ignore")
     df_bombshelter = __clean_data_info(df=df_bombshelter)
