@@ -130,7 +130,7 @@ def _get_raw_api_info() -> dict | None:
 
 
 @st.cache_data
-def get_normalize_data():
+def get_normalized_data():
     """
     Fetch, clean and normalize data from _get_raw_api_info()
     Returns:
@@ -163,9 +163,7 @@ def get_extended_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df = _add_get_googlemaps_links(df)
     df["properties.Bezbar"] = (
-        df["properties.Bezbar"]
-        .map({True: "Так", False: "Ні"})
-        .fillna("Невідомо")
+        df["properties.Bezbar"].map({True: "Так", False: "Ні"}).fillna("Невідомо")
     )
 
     column_map: dict[str, str] = {
@@ -186,7 +184,7 @@ def get_extended_data(df: pd.DataFrame) -> pd.DataFrame:
     return df.rename(columns=column_map)
 
 
-def get_city_info(otg_name: str, df: pd.DataFrame) -> pd.Series:
+def get_city_options(otg_name: str, df: pd.DataFrame) -> pd.Series:
     """Return sorted, unique city names, optionally filtered by OTG.
 
     Args:
@@ -334,13 +332,9 @@ def _clean_data_info(df: pd.DataFrame) -> pd.DataFrame:
                 "properties.TypeZs": lambda x: _clean_str_strict(
                     x["properties.TypeZs"]
                 ),
-                "properties.Type": lambda x: _clean_str_strict(
-                    x["properties.Type"]
-                ),
+                "properties.Type": lambda x: _clean_str_strict(x["properties.Type"]),
                 "properties.Rajon": lambda x: _clean_str_strict(x["properties.Rajon"]),
-                "properties.Bezbar": lambda x: _clean_bool(
-                    x["properties.Bezbar"]
-                ),
+                "properties.Bezbar": lambda x: _clean_bool(x["properties.Bezbar"]),
                 "properties.Adress": lambda x: _clean_adress(x["properties.Adress"]),
             }
         )

@@ -61,13 +61,17 @@ df_display = dp.get_extended_data(geo_data)
 st.sidebar.title("Фільтр та Пошук")
 
 otg_options: list[str] = [" "] + dp.get_sorted_column_values(df_display["ОТГ"])
-selected_otg: str = st.sidebar.selectbox("ОТГ (об'єднана територіальна громада)", otg_options)
+selected_otg: str = st.sidebar.selectbox(
+    "ОТГ (об'єднана територіальна громада)", otg_options
+)
 
 city_options: list[str] = dp.get_city_options(selected_otg, geo_data)
 selected_city: str = st.sidebar.selectbox("Населений пункт", city_options)
 
 all_types: list[str] = dp.get_sorted_column_values(df_display["Тип"])
-selected_types: list[str] = st.sidebar.multiselect("Тип укриття", all_types, default=all_types)
+selected_types: list[str] = st.sidebar.multiselect(
+    "Тип укриття", all_types, default=all_types
+)
 
 max_capacity: int = st.sidebar.slider("Місткість бомбосховища", 0, 3_876, 3_876, 10)
 
@@ -81,15 +85,15 @@ st.subheader("Мапа")
 min_lon, max_lon = 22.0, 24.8
 min_lat, max_lat = 47.8, 49.1
 map = leafmap.Map(
-    center=[48.63176, 24], 
+    center=[48.63176, 24],
     zoom=8,
     min_zoom=8,
     max_bounds=True,
     min_lat=min_lat,
     max_lat=max_lat,
     min_lon=min_lon,
-    max_lon=max_lon
-    )
+    max_lon=max_lon,
+)
 map.add_basemap("HYBRID")
 map.add_basemap("Stadia.StamenTerrainLines")
 map.add_basemap("Stadia.StamenTerrainLabels")
@@ -109,7 +113,7 @@ df_filtered["ID"] = df_filtered.index
 marker_cluster = MarkerCluster(name="").add_to(map)
 for _, row in df_filtered.iterrows():
 
-    popup_html =f"""
+    popup_html = f"""
     <div style="font-family:sans-serif; font-size:14px; min-width: 200px;">
     <b>ID:</b>{row['ID']}<br>
     <b>Назва:</b>{row['Назва']}<br>
@@ -122,13 +126,13 @@ for _, row in df_filtered.iterrows():
     <a href="{row['Посилання']}" target="_blank">Відкрити в Google Maps</a>
     </div>
     """
-    
+
     folium.Marker(
         location=[row["latitude"], row["longitude"]],
         popup=folium.Popup(popup_html, max_width=300),
-        tooltip=str(row["Назва"]) # Shows name when hovering over the marker
+        tooltip=str(row["Назва"]),  # Shows name when hovering over the marker
     ).add_to(marker_cluster)
-    
+
 map.to_streamlit()
 
 # ---------------------------------------------------------------------------
@@ -164,9 +168,9 @@ with col_left:
     type_capacity = df_filtered.groupby("Тип")[CAPACITY_COL].sum().to_frame()
     kd.display_pie_chart(
         type_capacity,
-        color_palette = PIE_PALETTE,
-        value = CAPACITY_COL,
-        title = "Розподіл місткості за типом",
+        color_palette=PIE_PALETTE,
+        value=CAPACITY_COL,
+        title="Розподіл місткості за типом",
     )
 
 with col_right:
@@ -193,4 +197,6 @@ with col_right:
         .sort_values(ascending=True)
         .tail(top_n)
     )
-    kd.display_bar_chart(city_capacity, title=bar_title, color=CAPACITY_COL, color_palette=BAR_PALETTE)
+    kd.display_bar_chart(
+        city_capacity, title=bar_title, color=CAPACITY_COL, color_palette=BAR_PALETTE
+    )

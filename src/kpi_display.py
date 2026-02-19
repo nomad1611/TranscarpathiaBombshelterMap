@@ -24,19 +24,17 @@ def display_kpi_card(
             space thousands-separator; strings are displayed as-is.
         kpi_names: Labels that correspond 1-to-1 with *kpis*.
     """
+
     def _format(value: int | float | str) -> str:
         if isinstance(value, (int, float)):
             return f"{value:,}".replace(",", "\u00a0")  # non-breaking space
         return str(value)
 
-    metrics_html = "".join(
-        f"""
+    metrics_html = "".join(f"""
         <div style="flex:1; text-align:center; padding:10px;">
             <div style="font-size:14px; color:#d1e7dd; margin-bottom:5px;">{label}</div>
             <div style="font-size:28px; font-weight:bold; color:white;">{_format(value)}</div>
-        </div>"""
-        for label, value in zip(kpi_names, kpis)
-    )
+        </div>""" for label, value in zip(kpi_names, kpis))
 
     st.markdown(
         f"""
