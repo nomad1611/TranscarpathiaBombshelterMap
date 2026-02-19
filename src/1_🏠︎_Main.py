@@ -76,12 +76,22 @@ accessible_only: bool = st.sidebar.checkbox("Безбар'єрність")
 # ---------------------------------------------------------------------------
 
 st.subheader("Мапа")
-
-map_ = leafmap.Map(center=[48.63176, 24], zoom=8)
+min_lon, max_lon = 22.0, 24.8
+min_lat, max_lat = 47.8, 49.1
+map_ = leafmap.Map(
+    center=[48.63176, 24], 
+    zoom=8,
+    min_zoom=8,
+    max_bounds=True,
+    min_lat=min_lat,
+    max_lat=max_lat,
+    min_lon=min_lon,
+    max_lon=max_lon
+    )
 map_.add_basemap("HYBRID")
 map_.add_basemap("Stadia.StamenTerrainLines")
 map_.add_basemap("Stadia.StamenTerrainLabels")
-map_.add_basemap("Stadia.OSMBright", False)
+
 
 df_filtered = dp.search_data(
     df_display,
@@ -145,9 +155,9 @@ with col_left:
     type_capacity = df_filtered.groupby("Тип")[CAPACITY_COL].sum().to_frame()
     kd.display_pie_chart(
         type_capacity,
-        color_palette=PIE_PALETTE,
-        value=CAPACITY_COL,
-        title="Розподіл місткості за типом",
+        color_palette = PIE_PALETTE,
+        value = CAPACITY_COL,
+        title = "Розподіл місткості за типом",
     )
 
 with col_right:
