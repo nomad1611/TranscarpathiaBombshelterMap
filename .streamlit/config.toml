@@ -1,0 +1,6 @@
+[theme]
+primaryColor = "#255c54"   # The "Accent" color (Sliders, Buttons)
+backgroundColor = "#FFFFFF" # Main area background
+secondaryBackgroundColor = "#efefefef" # Sidebar background
+textColor = "#262730"       # Text color
+font = "sans serif"
