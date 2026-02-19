@@ -32,7 +32,7 @@ def display_kpi_card(
 
     metrics_html = "".join(f"""
         <div style="flex:1; text-align:center; padding:10px;">
-            <div style="font-size:14px; color:#d1e7dd; margin-bottom:5px;">{label}</div>
+            <div style="font-size:16px; color:#d1e7dd; margin-bottom:5px;">{label}</div>
             <div style="font-size:28px; font-weight:bold; color:white;">{_format(value)}</div>
         </div>""" for label, value in zip(kpi_names, kpis))
 
@@ -81,8 +81,10 @@ def display_pie_chart(
     fig.update_layout(
         title_font_size=24,
         legend=dict(font=dict(size=18), orientation="h", y=-0.1),
+        font_size=14,
         margin=dict(l=20, r=20, t=50, b=20),
     )
+    fig.update_traces(textfont_size=18)
     st.plotly_chart(fig, width="stretch")
 
 
@@ -119,8 +121,9 @@ def display_bar_chart(
         yaxis_title=None,
         showlegend=False,
         coloraxis_showscale=False,
-        font=dict(size=18),
+        font=dict(size=18, weight='bold'),
         margin=dict(l=20, r=20, t=50, b=20),
     )
-    fig.update_traces(textfont_size=16, textposition="outside", cliponaxis=False)
+    fig.update_traces(textfont=dict(weight='bold', size=18), textposition="outside", cliponaxis=False)
+    fig.update_yaxes(tickfont=dict(size=16))
     st.plotly_chart(fig, width="stretch")

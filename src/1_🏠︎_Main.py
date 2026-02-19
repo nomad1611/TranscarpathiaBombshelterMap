@@ -184,11 +184,11 @@ with col_right:
 
     if target_otg:
         df_chart_source = df_display[df_display["ОТГ"] == target_otg]
-        bar_title = f"Топ-5: {target_otg} громада"
+        bar_title = f"Топ-5: {target_otg} громада<br><sup>Рейтинг населених пунктів за місткістю бомбосховищ</sup>"
         top_n = 5
     else:
         df_chart_source = df_display
-        bar_title = "Топ-10: Закарпатська обл."
+        bar_title = "Топ-10: Закарпатська обл.<br><sup>Рейтинг населених пунктів за місткістю бомбосховищ</sup>"
         top_n = 10
 
     city_capacity = (
