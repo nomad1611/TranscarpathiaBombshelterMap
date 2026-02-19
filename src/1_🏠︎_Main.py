@@ -10,6 +10,8 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 import leafmap.foliumap as leafmap
+import folium
+from folium.plugins import MarkerCluster
 
 import data_processing as dp
 import kpi_display as kd
@@ -78,7 +80,7 @@ accessible_only: bool = st.sidebar.checkbox("Безбар'єрність")
 st.subheader("Мапа")
 min_lon, max_lon = 22.0, 24.8
 min_lat, max_lat = 47.8, 49.1
-map_ = leafmap.Map(
+map = leafmap.Map(
     center=[48.63176, 24], 
     zoom=8,
     min_zoom=8,
@@ -88,9 +90,9 @@ map_ = leafmap.Map(
     min_lon=min_lon,
     max_lon=max_lon
     )
-map_.add_basemap("HYBRID")
-map_.add_basemap("Stadia.StamenTerrainLines")
-map_.add_basemap("Stadia.StamenTerrainLabels")
+map.add_basemap("HYBRID")
+map.add_basemap("Stadia.StamenTerrainLines")
+map.add_basemap("Stadia.StamenTerrainLabels")
 
 
 df_filtered = dp.search_data(
@@ -104,23 +106,30 @@ df_filtered = dp.search_data(
 df_filtered = df_filtered.copy()
 df_filtered["ID"] = df_filtered.index
 
-map_.add_points_from_xy(
-    df_filtered,
-    x="longitude",
-    y="latitude",
-    popup=[
-        "ID",
-        "Назва",
-        "ОТГ",
-        "Населений пункт",
-        "Адреса",
-        "Тип",
-        "Місткість",
-        "Інклюзивність",
-        "Посилання",
-    ],
-)
-map_.to_streamlit()
+marker_cluster = MarkerCluster(name="").add_to(map)
+for _, row in df_filtered.iterrows():
+
+    popup_html =f"""
+    <div style="font-family:sans-serif; font-size:14px; min-width: 200px;">
+    <b>ID:</b>{row['ID']}<br>
+    <b>Назва:</b>{row['Назва']}<br>
+    <b>ОТГ:</b>{row['ОТГ']}<br>
+    <b>Населений пункт:</b>{row['Населений пункт']}<br>
+    <b>Адреса:</b>{row['Адреса']}<br>
+    <b>Тип:</b>{row['Тип']}<br>
+    <b>Місткість:</b>{row['Місткість']}<br>
+    <b>Інклюзивність:</b>{row['Інклюзивність']}<br>
+    <a href="{row['Посилання']}" target="_blank">Відкрити в Google Maps</a>
+    </div>
+    """
+    
+    folium.Marker(
+        location=[row["latitude"], row["longitude"]],
+        popup=folium.Popup(popup_html, max_width=300),
+        tooltip=str(row["Назва"]) # Shows name when hovering over the marker
+    ).add_to(marker_cluster)
+    
+map.to_streamlit()
 
 # ---------------------------------------------------------------------------
 # KPI card

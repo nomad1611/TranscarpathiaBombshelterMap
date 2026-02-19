@@ -85,7 +85,7 @@ def display_pie_chart(
         legend=dict(font=dict(size=18), orientation="h", y=-0.1),
         margin=dict(l=20, r=20, t=50, b=20),
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
 def display_bar_chart(
@@ -125,4 +125,4 @@ def display_bar_chart(
         margin=dict(l=20, r=20, t=50, b=20),
     )
     fig.update_traces(textfont_size=16, textposition="outside", cliponaxis=False)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
