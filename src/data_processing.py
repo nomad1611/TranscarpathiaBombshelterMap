@@ -136,6 +136,7 @@ def get_normalized_data():
     Returns:
         Cleaned DataFrame or ``None`` if data could not be retrieved
     """
+    logger.info("DP-normalize: Start get_normalize_data().")
     raw_data = _get_raw_api_info()
     if raw_data is None:
         return None
@@ -145,6 +146,10 @@ def get_normalized_data():
         columns=["type", "geometry.type", "properties.Number"], errors="ignore"
     )
     df = _clean_data_info(df)
+    
+    source: str = "CACHE" if getattr(raw_data, "from_cache", False) else "API"
+    logger.info(f"DP-normalize: Finish get_normalize_data(). Succesfully normalize and raw geojson data from {source}")
+    
     return df
 
 
@@ -160,6 +165,8 @@ def get_extended_data(df: pd.DataFrame) -> pd.DataFrame:
         Display-ready DataFrame with Ukrainian column headers and a
         Google Maps hyperlink column.
     """
+    logger.info("DP-normalize: Start get_extended_data" )
+
     df = df.copy()
     df = _add_get_googlemaps_links(df)
     df["properties.Bezbar"] = (
@@ -180,6 +187,8 @@ def get_extended_data(df: pd.DataFrame) -> pd.DataFrame:
         "properties.Bezbar": "Інклюзивність",
         "link": "Посилання",
     }
+
+    logger.info("DP-normalize: Finished get_extended_data()")
 
     return df.rename(columns=column_map)
 
@@ -215,6 +224,8 @@ def get_sorted_column_values(s: pd.Series) -> pd.Series:
         Sorted list of unique string values.
     """
     unique_values = s.dropna().unique().tolist()
+    logger.info("DP-sort: Finish get_sorted_column_values(). Succesfully sorted values by ukranian alphabet")
+
     return sorted(unique_values, key=_UKR_KEY)
 
 
@@ -320,6 +331,7 @@ def _clean_data_info(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         Cleaned DataFrame with parsed coordinates.
     """
+    logger.info("DP-cleaning: Start _clean_data_info().")
     df_clean = (
         df.copy()
         .assign(
@@ -341,6 +353,9 @@ def _clean_data_info(df: pd.DataFrame) -> pd.DataFrame:
         .pipe(__merge_geometry_columns)
     )
     df_clean = df_clean.drop(columns=["geometry.coordinates"], errors="ignore")
+
+    logger.info("DP-cleaning: Finish _clean_data_info().")
+
 
     return df_clean
 

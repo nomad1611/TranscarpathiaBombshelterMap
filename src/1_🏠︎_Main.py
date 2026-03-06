@@ -7,7 +7,6 @@ civil-defence shelters in Transcarpathia.
 
 from __future__ import annotations
 
-import pandas as pd
 import streamlit as st
 import leafmap.foliumap as leafmap
 import folium
@@ -16,6 +15,7 @@ from folium.plugins import MarkerCluster
 import data_processing as dp
 import kpi_display as kd
 
+dp.logger.info("Main: Initialize page")
 # ---------------------------------------------------------------------------
 # Page config
 # ---------------------------------------------------------------------------
@@ -25,38 +25,39 @@ st.set_page_config(page_title="Головна сторінка", page_icon="🏠
 # ---------------------------------------------------------------------------
 # Header
 # ---------------------------------------------------------------------------
+dp.logger.info("Main: Display header")
 
 st.header("Головна сторінка")
 st.markdown(
     "<p style='font-size:20px;'>"
-    "<b>Тема:</b> Інформаційно-аналітична система контролю та візуалізації "
-    "будівель цивільного захисту на території Закарпатської області"
+    "Інформаційно-аналітична система контролю та візуалізації "
+    "будівель цивільного захисту на території Закарпатської області, отриманих з відкритого регіонального порталу даних"
     "</p>",
     unsafe_allow_html=True,
 )
-st.markdown(
-    "<p style='font-size:20px;'>"
-    "<b>Мета:</b> Процес обробки та візуалізації геопросторових даних про захисні "
-    "споруди Закарпатської області, отриманих з відкритого регіонального порталу даних"
-    "</p>",
-    unsafe_allow_html=True,
-)
+
 
 # ---------------------------------------------------------------------------
 # Data loading  (both raw + extended needed for different operations)
 # ---------------------------------------------------------------------------
 
+dp.logger.info("Main-data: Initialize data loading dp.get_normalize_data() and dp.get_extended_data()")
+
 geo_data = dp.get_normalized_data()
 
 if geo_data is None:
+    dp.logger.error("Main-data: FAIL Couldn`t load data from dp.get_normalize_data()")
     st.error("Не вдалося завантажити дані. Спробуйте оновити сторінку.")
     st.stop()
 
 df_display = dp.get_extended_data(geo_data)
 
+dp.logger.info("Main-data: Succesfully finished data loading dp.get_normalize_data() and dp.get_extended_data()")
+
 # ---------------------------------------------------------------------------
 # Sidebar filters
 # ---------------------------------------------------------------------------
+dp.logger.info("Main-search: Initialize st.sidebar for filter and search")
 
 st.sidebar.title("Фільтр та Пошук")
 
@@ -77,9 +78,13 @@ max_capacity: int = st.sidebar.slider("Місткість бомбосховищ
 
 accessible_only: bool = st.sidebar.checkbox("Безбар'єрність")
 
+dp.logger.info("Main-search: Finish initializing st.sidebar for filter and search")
+
 # ---------------------------------------------------------------------------
 # Map
 # ---------------------------------------------------------------------------
+
+dp.logger.info("Main-map: Initialize leafmap.folium map")
 
 st.subheader("Мапа")
 min_lon, max_lon = 22.0, 24.8
@@ -99,6 +104,7 @@ map.add_basemap("Stadia.StamenTerrainLines")
 map.add_basemap("Stadia.StamenTerrainLabels")
 
 
+
 df_filtered = dp.search_data(
     df_display,
     city_name=selected_city,
@@ -110,19 +116,21 @@ df_filtered = dp.search_data(
 df_filtered = df_filtered.copy()
 df_filtered["ID"] = df_filtered.index
 
+dp.logger.info("Main-map:  Data loading for dots and popups")
+
 marker_cluster = MarkerCluster(name="").add_to(map)
 for _, row in df_filtered.iterrows():
 
     popup_html = f"""
     <div style="font-family:sans-serif; font-size:14px; min-width: 200px;">
-    <b>ID:</b>{row['ID']}<br>
-    <b>Назва:</b>{row['Назва']}<br>
-    <b>ОТГ:</b>{row['ОТГ']}<br>
-    <b>Населений пункт:</b>{row['Населений пункт']}<br>
-    <b>Адреса:</b>{row['Адреса']}<br>
-    <b>Тип:</b>{row['Тип']}<br>
-    <b>Місткість:</b>{row['Місткість']}<br>
-    <b>Інклюзивність:</b>{row['Інклюзивність']}<br>
+    <b>ID: </b>{row['ID']}<br>
+    <b>Назва: </b>{row['Назва']}<br>
+    <b>ОТГ: </b>{row['ОТГ']}<br>
+    <b>Населений пункт: </b>{row['Населений пункт']}<br>
+    <b>Адреса: </b>{row['Адреса']}<br>
+    <b>Тип: </b>{row['Тип']}<br>
+    <b>Місткість: </b>{row['Місткість']}<br>
+    <b>Інклюзивність: </b>{row['Інклюзивність']}<br>
     <a href="{row['Посилання']}" target="_blank">Відкрити в Google Maps</a>
     </div>
     """
@@ -134,6 +142,8 @@ for _, row in df_filtered.iterrows():
     ).add_to(marker_cluster)
 
 map.to_streamlit()
+
+dp.logger.info("Main-map: Finish display leafmap.folium map")
 
 # ---------------------------------------------------------------------------
 # KPI card
