@@ -15,7 +15,7 @@ env/
 .env
 
 # Streamlit config (optional, if you want to rely on Docker ENV vars instead)
-.streamlit/
+!.streamlit/
 
 # Docker
 Dockerfile

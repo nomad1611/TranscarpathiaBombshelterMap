@@ -100,8 +100,8 @@ map = leafmap.Map(
     max_lon=max_lon,
 )
 map.add_basemap("HYBRID")
-map.add_basemap("Stadia.StamenTerrainLines")
-map.add_basemap("Stadia.StamenTerrainLabels")
+#map.add_basemap("Stadia.StamenTerrainLines")
+#map.add_basemap("Stadia.StamenTerrainLabels")
 
 
 
